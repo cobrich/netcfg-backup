@@ -1,14 +1,16 @@
+// config.go
 package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
+	"os"
 	"ssh-fetcher/models"
 )
 
 func ReadConfig() []models.Device {
-	data, err := ioutil.ReadFile("devices/devices.json")
+	// Используем os.ReadFile, это современный стандарт
+	data, err := os.ReadFile("devices/devices.json") 
 	if err != nil {
 		log.Fatalf("Ошибка чтения devices.json: %v", err)
 	}

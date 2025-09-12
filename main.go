@@ -36,6 +36,12 @@ func main() {
 
 	devices := config.ReadConfig()
 
+	utils.Log.Infof("Загружено %d устройств из конфигурации", len(devices))
+	if len(devices) == 0 {
+		utils.Log.Warn("Список устройств пуст. Завершение работы.")
+		return
+	}
+
 	jobs := make(chan models.Device, len(devices))
 
 	var wg sync.WaitGroup

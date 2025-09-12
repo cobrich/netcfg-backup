@@ -1,17 +1,9 @@
 [
   {
-    "host": "127.0.0.1",
+    "host": "172.20.10.4", 
     "username": "bekzat",
-    "key_path": "/home/bekzat/.ssh/id_rsa", 
+    "key_path": "/root/.ssh/ssh_fetcher_key",
     "protocol": "ssh",
-    "commands": ["uname -a"]
-  },
-  {
-    "host": "192.168.1.20",
-    "username": "user",
-    "password_env": "TELNET_DEVICE_PASSWORD",
-    "protocol": "telnet",
-    "prompt": "#",
-    "commands": ["display version"]
+    "commands": ["id"]
   }
 ]
