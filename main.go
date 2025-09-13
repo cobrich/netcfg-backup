@@ -4,10 +4,10 @@ import (
 	"flag"
 	"log"
 	"os"
-	"ssh-fetcher/config"
-	"ssh-fetcher/connectors"
-	"ssh-fetcher/models"
-	"ssh-fetcher/utils"
+	"github.com/cobrich/netcfg-backup/config"
+	"github.com/cobrich/netcfg-backup/connectors"
+	"github.com/cobrich/netcfg-backup/models"
+	"github.com/cobrich/netcfg-backup/utils"
 	"sync"
 	"time"
 
@@ -28,6 +28,8 @@ func main() {
 
 	utils.InitLogger()
 
+	utils.Log.Info("Starting github.com/cobrich/netcfg-backup")
+
 	err = utils.CreateBackup(*backupPath)
 	if err != nil {
 		utils.Log.WithField("component", "backup").Error(err)
@@ -46,10 +48,12 @@ func main() {
 
 	var wg sync.WaitGroup
 
+	utils.Log.Infof("Starting %d workers", numWorkers)
 	for w := 1; w <= numWorkers; w++ {
 		wg.Add(1)
 		go worker(&wg, w, jobs, *backupPath)
 	}
+	utils.Log.Info("All workers started")
 
 	for _, dev := range devices {
 		jobs <- dev

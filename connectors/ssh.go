@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"ssh-fetcher/models"
-	"ssh-fetcher/utils"
+	"github.com/cobrich/netcfg-backup/models"
+	"github.com/cobrich/netcfg-backup/utils"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"

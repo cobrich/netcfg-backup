@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath" // Очень важно для безопасного соединения путей
-	"ssh-fetcher/models"
+	"github.com/cobrich/netcfg-backup/models"
 	"time"
 )
 

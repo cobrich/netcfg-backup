@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"ssh-fetcher/models"
+	"github.com/cobrich/netcfg-backup/models"
 )
 
 func ReadConfig() []models.Device {
