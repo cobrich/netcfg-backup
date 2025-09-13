@@ -1,4 +1,5 @@
 .env
+/devices/devices.json
 
 # Compiled binary
 /ssh-fetcher
