@@ -12,6 +12,8 @@ import (
 	"github.com/ziutek/telnet"
 )
 
+// TelnetConnector implements the Connector interface for the Telnet protocol.
+
 type TelnetConnector struct {
 	Host     string
 	Username string
@@ -23,6 +25,7 @@ type TelnetConnector struct {
 // Set reasonable default timeouts
 const defaultTelnetTimeout = 15 * time.Second
 
+// RunCommands connects to a device via Telnet and executes a list of commands.
 func (t *TelnetConnector) RunCommands(cmds []string) ([]models.Result, error) {
 	logger := utils.Log.WithField("host", t.Host)
 	logger.Infof("Telnet: connecting to %s...", t.Host)
@@ -90,7 +93,8 @@ func (t *TelnetConnector) RunCommands(cmds []string) ([]models.Result, error) {
 			logger.Errorf("Telnet: error executing command '%s': %v", cmd, err)
 			results = append(results, models.Result{Cmd: cmd, Output: fmt.Sprintf("error during execution: %v", err)})
 		} else {
-			// CHANGE: Clean the output from the command echo and prompt
+			// Telnet output often includes the command that was just typed and the prompt that follows the output.
+			// This function cleans up the raw output to return only the actual command response.
 			cleanOutput := cleanTelnetOutput(output, cmd, t.Prompt)
 			logger.Infof("Telnet: command '%s' executed successfully", cmd)
 			results = append(results, models.Result{Cmd: cmd, Output: cleanOutput})
@@ -100,7 +104,7 @@ func (t *TelnetConnector) RunCommands(cmds []string) ([]models.Result, error) {
 	return results, nil
 }
 
-// CHANGE: Helper function to get the timeout with a default value
+// getTimeout returns the configured timeout or a default value.
 func (t *TelnetConnector) getTimeout() time.Duration {
 	if t.Timeout > 0 {
 		return t.Timeout
@@ -108,20 +112,20 @@ func (t *TelnetConnector) getTimeout() time.Duration {
 	return defaultTelnetTimeout
 }
 
-// CHANGE: Helper function to wait for one of several text options
+// expect reads from the connection until one of the delimiters is found.
 func expect(conn *telnet.Conn, timeout time.Duration, delimiters ...string) error {
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	return conn.SkipUntil(delimiters...)
 }
 
-// CHANGE: Helper function for sending data with a timeout
+// send writes a string to the connection with a timeout.
 func send(conn *telnet.Conn, timeout time.Duration, s string) error {
 	conn.SetWriteDeadline(time.Now().Add(timeout))
 	_, err := conn.Write([]byte(s + "\n"))
 	return err
 }
 
-// CHANGE: Improved function for reading up to the prompt with a timeout
+// readUntil reads from the connection until the prompt is found.
 func readUntil(conn *telnet.Conn, timeout time.Duration, prompt string) (string, error) {
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	data, err := conn.ReadUntil(prompt)
@@ -131,7 +135,7 @@ func readUntil(conn *telnet.Conn, timeout time.Duration, prompt string) (string,
 	return string(data), nil
 }
 
-// CHANGE: Helper function to clean the output
+// cleanTelnetOutput removes the command echo and prompt from the output.
 func cleanTelnetOutput(output, cmd, prompt string) string {
 	// Remove the command echo (if it is at the beginning)
 	output = strings.TrimPrefix(output, cmd)

@@ -1,5 +1,8 @@
+// Package models defines the data structures used throughout the application.
 package models
 
+// Device represents a network device to be backed up.
+// It contains connection details, credentials, and the commands to be executed.
 type Device struct {
 	Host           string   `json:"host"`
 	Username       string   `json:"username"`

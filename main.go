@@ -1,3 +1,9 @@
+/*
+netcfg-backup is a tool for concurrently backing up configurations from network
+devices using SSH and Telnet. It reads a list of devices from a JSON config,
+connects to them in parallel using a worker pool, executes commands, and saves
+the output to timestamped files.
+*/
 package main
 
 import (
@@ -18,6 +24,8 @@ import (
 const defaultTimeout = 10 * time.Second
 const numWorkers = 10
 
+// main is the primary function that orchestrates the backup process.
+// It initializes the logger, reads configuration, and starts the worker pool.
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -53,6 +61,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
+	// A pool of workers is started to process devices concurrently. This prevents overwhelming the network or the host machine.
 	utils.Log.Infof("Starting %d workers", numWorkers)
 	for w := 1; w <= numWorkers; w++ {
 		wg.Add(1)
@@ -70,6 +79,8 @@ func main() {
 	utils.Log.Info("All tasks completed.")
 }
 
+// worker is a concurrent worker that processes backup jobs from a channel.
+// It receives device information, establishes a connection, runs commands, and saves the results.
 func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath string) {
 	defer wg.Done()
 

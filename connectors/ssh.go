@@ -16,6 +16,8 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+// SSHConnector implements the Connector interface for the SSH protocol.
+
 type SSHConnector struct {
 	Host     string
 	Username string
@@ -24,7 +26,7 @@ type SSHConnector struct {
 	Timeout  time.Duration
 }
 
-// It creates an authentication method: either by key or by password.
+// createAuthMethod creates an SSH authentication method from a private key file or a password.
 func createAuthMethod(keyPath, password string) (ssh.AuthMethod, error) {
 	if keyPath != "" {
 		key, err := os.ReadFile(keyPath)
@@ -44,6 +46,7 @@ func createAuthMethod(keyPath, password string) (ssh.AuthMethod, error) {
 	return ssh.Password(password), nil
 }
 
+// RunCommands connects to a device via SSH and executes a list of commands.
 func (s *SSHConnector) RunCommands(cmds []string) ([]models.Result, error) {
 	logger := utils.Log.WithField("host", s.Host)
 	logger.Infof("SSH: connecting to %s...", s.Host)
@@ -113,6 +116,10 @@ func (s *SSHConnector) RunCommands(cmds []string) ([]models.Result, error) {
 			outputCh <- output
 		}(cmd)
 
+		// Use a select statement to wait for one of three outcomes:
+		// 1. The context times out (overall command timeout).
+		// 2. An error occurs during execution.
+		// 3. The command successfully returns output.
 		select {
 		case <-ctx.Done():
 			logger.Errorf("SSH: command execution timed out '%s'", cmd)
@@ -129,7 +136,7 @@ func (s *SSHConnector) RunCommands(cmds []string) ([]models.Result, error) {
 	return results, nil
 }
 
-// New helper function to create HostKeyCallback
+// createHostKeyCallback creates a host key callback that verifies server keys against the user's known_hosts file.
 func createHostKeyCallback() (ssh.HostKeyCallback, error) {
 	// Find the home directory of the current user
 	homeDir, err := os.UserHomeDir()

@@ -8,6 +8,7 @@ import (
 
 var Log = logrus.New()
 
+// InitLogger initializes the global logger with a JSON formatter and sets up file-based logging.
 func InitLogger() {
 	// output to stdout and file
 	Log.Out = os.Stdout

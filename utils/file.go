@@ -1,3 +1,4 @@
+// Package utils provides helper functions for file system operations and logging.
 package utils
 
 import (
@@ -8,7 +9,7 @@ import (
 	"time"
 )
 
-// CreateBackup now takes a base path
+// CreateBackup ensures the base directory for backups exists.
 func CreateBackup(basePath string) error {
 	if _, err := os.Stat(basePath); os.IsNotExist(err) {
 		// Use MkdirAll, as it doesn't return an error if the folder already exists
@@ -21,7 +22,7 @@ func CreateBackup(basePath string) error {
 	return nil
 }
 
-// GetDeviceDir now takes a base path
+// GetDeviceDir creates and returns the path to the directory for a specific device.
 func GetDeviceDir(basePath, host string) (string, error) {
 	// Securely join paths: basePath + "/" + host
 	dir := filepath.Join(basePath, host)
@@ -34,7 +35,7 @@ func GetDeviceDir(basePath, host string) (string, error) {
 	return dir, nil
 }
 
-// GetBackupFilename now takes a base path
+// GetBackupFilename generates a timestamped filename for a backup file.
 func GetBackupFilename(basePath, host string) (string, error) {
 	// First, get the directory for the device, passing basePath
 	dir, err := GetDeviceDir(basePath, host)
@@ -49,7 +50,7 @@ func GetBackupFilename(basePath, host string) (string, error) {
 	return filepath.Join(dir, filename), nil
 }
 
-// WriteResultsToFile now takes a base path
+// WriteResultsToFile writes the command results to a backup file.
 func WriteResultsToFile(basePath string, dev models.Device, results []models.Result) error {
 	// Get the full filename, passing basePath
 	filename, err := GetBackupFilename(basePath, dev.Host)

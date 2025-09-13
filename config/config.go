@@ -1,4 +1,5 @@
-// config.go
+// Package config handles reading and parsing the application's configuration,
+// primarily the list of devices to be backed up.
 package config
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/cobrich/netcfg-backup/models"
 )
 
+// ReadConfig reads the device inventory from the specified JSON file.
 func ReadConfig() ([]models.Device, error) {
 	// Use os.ReadFile, it's the modern standard
 	data, err := os.ReadFile("devices/devices.json")
