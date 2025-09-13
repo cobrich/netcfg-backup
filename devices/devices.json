@@ -1,9 +1,0 @@
-[
-  {
-    "host": "172.20.10.4", 
-    "username": "bekzat",
-    "key_path": "/root/.ssh/ssh_fetcher_key",
-    "protocol": "ssh",
-    "commands": ["id"]
-  }
-]
