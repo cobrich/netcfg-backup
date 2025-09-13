@@ -2,7 +2,7 @@ package connectors
 
 import (
 	"fmt"
-	"net" // ИЗМЕНЕНИЕ: нужен для DialTimeout
+	"net" // CHANGE: needed for DialTimeout
 	"strings"
 	"time"
 
@@ -17,82 +17,82 @@ type TelnetConnector struct {
 	Username string
 	Password string
 	Prompt   string
-	Timeout  time.Duration // Этот таймаут теперь будет для каждой операции
+	Timeout  time.Duration // This timeout will now be for every operation
 }
 
-// Устанавливаем разумные таймауты по умолчанию
+// Set reasonable default timeouts
 const defaultTelnetTimeout = 15 * time.Second
 
 func (t *TelnetConnector) RunCommands(cmds []string) ([]models.Result, error) {
 	logger := utils.Log.WithField("host", t.Host)
-	logger.Infof("Telnet: подключение к %s...", t.Host)
+	logger.Infof("Telnet: connecting to %s...", t.Host)
 
-	// ИЗМЕНЕНИЕ: Используем net.DialTimeout для подключения с таймаутом
+	// CHANGE: Use net.DialTimeout to connect with a timeout
 	addr := t.Host
 	if !strings.Contains(addr, ":") {
 		addr = addr + ":23"
 	}
 	connDialer, err := net.DialTimeout("tcp", addr, t.getTimeout())
 	if err != nil {
-		logger.Errorf("Telnet: не удалось подключиться: %v", err)
-		return nil, fmt.Errorf("telnet: не удалось подключиться: %v", err)
+		logger.Errorf("Telnet: failed to connect: %v", err)
+		return nil, fmt.Errorf("telnet: failed to connect: %v", err)
 	}
 
-	// Оборачиваем соединение в telnet.Conn
+	// Wrap the connection in telnet.Conn
 	conn, err := telnet.NewConn(connDialer)
 	if err != nil {
-		// Эта ошибка может возникнуть, если Telnet handshake (обмен опциями) не удался
-		logger.Errorf("Telnet: не удалось создать Telnet-сессию: %v", err)
-		connDialer.Close() // Закрываем базовое TCP соединение
-		return nil, fmt.Errorf("telnet: не удалось создать Telnet-сессию: %v", err)
+		// This error can occur if the Telnet handshake (option exchange) fails
+		logger.Errorf("Telnet: failed to create Telnet session: %v", err)
+		connDialer.Close() // Close the base TCP connection
+		return nil, fmt.Errorf("telnet: failed to create Telnet session: %v", err)
 	}
 
 	defer conn.Close()
 
-	// Устанавливаем дедлайн на все соединение. Он будет сдвигаться для каждой операции
+	// Set a deadline for the entire connection. It will be shifted for each operation
 	conn.SetUnixWriteMode(true)
 
-	// --- Авторизация с дедлайнами ---
+	// --- Authorization with deadlines ---
 	if err := expect(conn, t.getTimeout(), "Username:", "login:"); err != nil {
-		return nil, fmt.Errorf("telnet: не дождался приглашения для ввода имени пользователя: %v", err)
+		return nil, fmt.Errorf("telnet: did not wait for username prompt: %v", err)
 	}
 	if err := send(conn, t.getTimeout(), t.Username); err != nil {
-		return nil, fmt.Errorf("telnet: не удалось отправить имя пользователя: %v", err)
+		return nil, fmt.Errorf("telnet: failed to send username: %v", err)
 	}
 
 	if err := expect(conn, t.getTimeout(), "Password:", "password:"); err != nil {
-		return nil, fmt.Errorf("telnet: не дождался приглашения для ввода пароля: %v", err)
+		return nil, fmt.Errorf("telnet: did not wait for password prompt: %v", err)
 	}
 	if err := send(conn, t.getTimeout(), t.Password); err != nil {
-		return nil, fmt.Errorf("telnet: не удалось отправить пароль: %v", err)
+		return nil, fmt.Errorf("telnet: failed to send password: %v", err)
 	}
 
 	if t.Prompt == "" {
 		t.Prompt = ">"
 	}
-	// Ожидаем prompt после входа
+	// Wait for the prompt after login
 	if _, err := readUntil(conn, t.getTimeout(), t.Prompt); err != nil {
-		return nil, fmt.Errorf("telnet: не дождался prompt после входа: %v", err)
+		return nil, fmt.Errorf("telnet: did not wait for prompt after login: %v", err)
 	}
 
 	results := []models.Result{}
 
 	for _, cmd := range cmds {
-		logger.Infof("Telnet: выполняем команду: %s", cmd)
+		logger.Infof("Telnet: executing command: %s", cmd)
 
 		if err := send(conn, t.getTimeout(), cmd); err != nil {
-			results = append(results, models.Result{Cmd: cmd, Output: fmt.Sprintf("ошибка при отправке: %v", err)})
-			continue // Переходим к следующей команде
+			results = append(results, models.Result{Cmd: cmd, Output: fmt.Sprintf("error sending: %v", err)})
+			continue // Go to the next command
 		}
 
 		output, err := readUntil(conn, t.getTimeout(), t.Prompt)
 		if err != nil {
-			logger.Errorf("Telnet: ошибка выполнения команды '%s': %v", cmd, err)
-			results = append(results, models.Result{Cmd: cmd, Output: fmt.Sprintf("ошибка при выполнении: %v", err)})
+			logger.Errorf("Telnet: error executing command '%s': %v", cmd, err)
+			results = append(results, models.Result{Cmd: cmd, Output: fmt.Sprintf("error during execution: %v", err)})
 		} else {
-			// ИЗМЕНЕНИЕ: Очищаем вывод от эха команды и prompt
+			// CHANGE: Clean the output from the command echo and prompt
 			cleanOutput := cleanTelnetOutput(output, cmd, t.Prompt)
-			logger.Infof("Telnet: команда '%s' успешно выполнена", cmd)
+			logger.Infof("Telnet: command '%s' executed successfully", cmd)
 			results = append(results, models.Result{Cmd: cmd, Output: cleanOutput})
 		}
 	}
@@ -100,7 +100,7 @@ func (t *TelnetConnector) RunCommands(cmds []string) ([]models.Result, error) {
 	return results, nil
 }
 
-// ИЗМЕНЕНИЕ: Вспомогательная функция для получения таймаута с значением по умолчанию
+// CHANGE: Helper function to get the timeout with a default value
 func (t *TelnetConnector) getTimeout() time.Duration {
 	if t.Timeout > 0 {
 		return t.Timeout
@@ -108,20 +108,20 @@ func (t *TelnetConnector) getTimeout() time.Duration {
 	return defaultTelnetTimeout
 }
 
-// ИЗМЕНЕНИЕ: Вспомогательная функция для ожидания одного из нескольких вариантов текста
+// CHANGE: Helper function to wait for one of several text options
 func expect(conn *telnet.Conn, timeout time.Duration, delimiters ...string) error {
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	return conn.SkipUntil(delimiters...)
 }
 
-// ИЗМЕНЕНИЕ: Вспомогательная функция для отправки данных с таймаутом
+// CHANGE: Helper function for sending data with a timeout
 func send(conn *telnet.Conn, timeout time.Duration, s string) error {
 	conn.SetWriteDeadline(time.Now().Add(timeout))
 	_, err := conn.Write([]byte(s + "\n"))
 	return err
 }
 
-// ИЗМЕНЕНИЕ: Улучшенная функция чтения до prompt с таймаутом
+// CHANGE: Improved function for reading up to the prompt with a timeout
 func readUntil(conn *telnet.Conn, timeout time.Duration, prompt string) (string, error) {
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	data, err := conn.ReadUntil(prompt)
@@ -131,12 +131,12 @@ func readUntil(conn *telnet.Conn, timeout time.Duration, prompt string) (string,
 	return string(data), nil
 }
 
-// ИЗМЕНЕНИЕ: Вспомогательная функция для очистки вывода
+// CHANGE: Helper function to clean the output
 func cleanTelnetOutput(output, cmd, prompt string) string {
-	// Удаляем эхо команды (если оно есть в начале)
+	// Remove the command echo (if it is at the beginning)
 	output = strings.TrimPrefix(output, cmd)
-	// Удаляем prompt (если он есть в конце)
+	// Remove the prompt (if it is at the end)
 	output = strings.TrimSuffix(output, prompt)
-	// Убираем лишние пробелы и переносы строк по краям
+	// Remove extra spaces and line breaks at the edges
 	return strings.TrimSpace(output)
 }

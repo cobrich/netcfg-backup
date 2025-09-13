@@ -1,16 +1,16 @@
 .env
 
-# Скомпилированный бинарник
+# Compiled binary
 /ssh-fetcher
 /ssh-fetcher.exe
 
-# Папки с результатами и логами.
+# Folders with results and logs.
 /backups/
 /logs/
 
-# Системные файлы macOS
+# macOS system files
 .DS_Store
 
-# Файлы IDE (VSCode, GoLand)
+# IDE files (VSCode, GoLand)
 .vscode/
 .idea/

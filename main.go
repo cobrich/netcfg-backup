@@ -4,12 +4,13 @@ import (
 	"flag"
 	"log"
 	"os"
+	"sync"
+	"time"
+
 	"github.com/cobrich/netcfg-backup/config"
 	"github.com/cobrich/netcfg-backup/connectors"
 	"github.com/cobrich/netcfg-backup/models"
 	"github.com/cobrich/netcfg-backup/utils"
-	"sync"
-	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -23,7 +24,7 @@ func main() {
 		log.Println("Warning: .env file not found, using system environment variables")
 	}
 
-	backupPath := flag.String("backup-path", "backups", "Путь к папке для сохранения бэкапов")
+	backupPath := flag.String("backup-path", "backups", "Path to the backup directory")
 	flag.Parse()
 
 	utils.InitLogger()
@@ -36,11 +37,15 @@ func main() {
 		return
 	}
 
-	devices := config.ReadConfig()
+	devices, err := config.ReadConfig()
+	if err != nil {
+		utils.Log.Fatalf("Failed to load configuration: %v", err)
+		
+	}
 
-	utils.Log.Infof("Загружено %d устройств из конфигурации", len(devices))
+	utils.Log.Infof("Loaded %d devices from configuration", len(devices))
 	if len(devices) == 0 {
-		utils.Log.Warn("Список устройств пуст. Завершение работы.")
+		utils.Log.Warn("Device list is empty. Exiting.")
 		return
 	}
 
@@ -62,7 +67,7 @@ func main() {
 
 	wg.Wait()
 
-	utils.Log.Info("Все задачи выполнены.")
+	utils.Log.Info("All tasks completed.")
 }
 
 func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath string) {
@@ -74,12 +79,12 @@ func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath st
 			"host":      dev.Host,
 			"protocol":  dev.Protocol,
 		})
-		entry.Info("Воркер взял задачу")
+		entry.Info("Worker picked up the task")
 
 		if dev.PasswordEnv != "" {
 			dev.Password = os.Getenv(dev.PasswordEnv)
 			if dev.Password == "" {
-				entry.Warnf("Переменная окружения '%s' не задана или пуста", dev.PasswordEnv)
+				entry.Warnf("Environment variable '%s' is not set or empty", dev.PasswordEnv)
 			}
 		}
 
@@ -107,21 +112,21 @@ func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath st
 				Timeout:  timeout,
 			}
 		default:
-			entry.Error("Неизвестный протокол")
+			entry.Error("Unknown protocol")
 			continue
 		}
 
 		results, err := connector.RunCommands(dev.Commands)
 		if err != nil {
-			entry.WithField("error", err).Error("Ошибка выполнения команд")
+			entry.WithField("error", err).Error("Error executing commands")
 			continue
 		}
 
 		err = utils.WriteResultsToFile(backupPath, dev, results)
 		if err != nil {
-			entry.WithField("error", err).Error("Ошибка сохранения результатов")
+			entry.WithField("error", err).Error("Error saving results")
 		} else {
-			entry.Info("Результаты успешно сохранены")
+			entry.Info("Results saved successfully")
 		}
 	}
 }

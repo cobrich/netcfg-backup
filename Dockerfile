@@ -1,34 +1,34 @@
-# Используем официальный образ Go как "сборщик"
+# Use the official Go image as a "builder"
 FROM golang:1.24.6-alpine AS builder
 
-# Устанавливаем рабочую директорию внутри контейнера
+# Set the working directory inside the container
 WORKDIR /app
 
-# Копируем go.mod и go.sum для кэширования зависимостей
+# Copy go.mod and go.sum to cache dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Копируем весь исходный код проекта
+# Copy the entire project source code
 COPY . .
 
-# Собираем статичный бинарник, который не будет зависеть от системных библиотек
-# CGO_ENABLED=0 - это ключ к успеху для маленьких образов
+# Build a static binary that will not depend on system libraries
+# CGO_ENABLED=0 is the key to success for small images
 RUN CGO_ENABLED=0 go build -o /app/ssh-fetcher .
 
-# --- Этап 2: Финальный образ ---
-# Используем минималистичный образ. Alpine - отличный выбор.
+# --- Stage 2: Final image ---
+# Use a minimalistic image. Alpine is an excellent choice.
 FROM alpine:latest
 
-# Устанавливаем рабочую директорию
+# Set the working directory
 WORKDIR /app
 RUN mkdir logs
 
-# Копируем ТОЛЬКО скомпилированный бинарник из этапа сборки
+# Copy ONLY the compiled binary from the build stage
 COPY --from=builder /app/ssh-fetcher .
 
-# Копируем папку с конфигурацией по умолчанию
+# Copy the folder with the default configuration
 COPY devices/ ./devices/
 
-# Указываем, какая команда будет выполняться при запуске контейнера
-# Мы используем массив, чтобы избежать проблем с обработкой аргументов шеллом
+# Specify the command to be executed when the container starts
+# We use an array to avoid problems with shell argument handling
 ENTRYPOINT ["./ssh-fetcher"]
