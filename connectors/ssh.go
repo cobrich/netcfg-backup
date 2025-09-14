@@ -19,11 +19,12 @@ import (
 // SSHConnector implements the Connector interface for the SSH protocol.
 
 type SSHConnector struct {
-	Host     string
-	Username string
-	Password string
-	KeyPath  string
-	Timeout  time.Duration
+	Host               string
+	Username           string
+	Password           string
+	KeyPath            string
+	Timeout            time.Duration
+	AllowInsecureAlgos bool // For use nonsecure lgorithms
 }
 
 // createAuthMethod creates an SSH authentication method from a private key file or a password.
@@ -82,6 +83,23 @@ func (s *SSHConnector) RunCommands(cmds []string) ([]models.Result, error) {
 		Auth:            []ssh.AuthMethod{authMethod}, // <-- Use the created method
 		HostKeyCallback: hostKeyCallback,
 		Timeout:         s.Timeout,
+	}
+
+	if s.AllowInsecureAlgos {
+		logger.Warn("Enabling insecure legacy algorithms for this host")
+		config.Config = ssh.Config{
+			KeyExchanges: []string{
+				// First modern algorithms are specified, then outdated ones
+				"curve25519-sha256@libssh.org",
+				"ecdh-sha2-nistp384",
+				"ecdh-sha2-nistp256",
+				"diffie-hellman-group-exchange-sha256",
+				"diffie-hellman-group14-sha256", // <-- more secure option than sha1
+				"diffie-hellman-group14-sha1",   // <-- outdated
+				"diffie-hellman-group1-sha1",    // <-- very outdated
+			},
+			// If necessary, you can also add outdated HostKeyAlgorithms or Ciphers here
+		}
 	}
 
 	c, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
