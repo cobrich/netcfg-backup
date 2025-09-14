@@ -7,6 +7,6 @@ import "github.com/cobrich/netcfg-backup/models"
 // It abstracts the underlying storage mechanism (e.g., JSON file, database).
 type Store interface {
 	GetAllDevices() ([]models.Device, error)
-	// AddDevice(device models.Device) error      // <-- Мы добавим это позже
-	// RemoveDevice(host string) error          // <-- И это тоже
+	AddDevice(device models.Device) error
+	// RemoveDevice(host string) error
 }
