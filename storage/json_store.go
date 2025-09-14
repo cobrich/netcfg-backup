@@ -71,3 +71,43 @@ func (js *JSONStore) AddDevice(newDevice models.Device) error {
 
 	return nil
 }
+
+// RemoveDevice removes a device from the JSON file by its host.
+func (js *JSONStore) RemoveDevice(host string) error {
+	devices, err := js.GetAllDevices()
+	if err != nil {
+		return err
+	}
+
+	// Create a new slice to store the devices we want to keep
+	var updatedDevices []models.Device
+	found := false
+
+	for _, dev := range devices {
+		if dev.Host == host {
+			found = true // We have found a device that needs to be removed.
+		} else {
+			// We are keeping this device and adding it to a new list.
+			updatedDevices = append(updatedDevices, dev)
+		}
+	}
+
+	// If we still haven't found the device, we will notify the user.
+	if !found {
+		return fmt.Errorf("device with host '%s' not found", host)
+	}
+
+	// Encode the new (reduced) list in JSON
+	data, err := json.MarshalIndent(updatedDevices, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling devices to JSON: %w", err)
+	}
+
+	// Rewrite the file
+	err = os.WriteFile(js.filePath, data, 0644)
+	if err != nil {
+		return fmt.Errorf("error writing to devices file %s: %w", js.filePath, err)
+	}
+
+	return nil
+}

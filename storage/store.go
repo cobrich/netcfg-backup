@@ -8,5 +8,5 @@ import "github.com/cobrich/netcfg-backup/models"
 type Store interface {
 	GetAllDevices() ([]models.Device, error)
 	AddDevice(device models.Device) error
-	// RemoveDevice(host string) error
+	RemoveDevice(host string) error
 }
