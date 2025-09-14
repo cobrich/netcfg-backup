@@ -21,7 +21,7 @@ var addCmd = &cobra.Command{
 
 		fmt.Println("--- Adding a new device ---")
 
-		// Спрашиваем данные
+		// Ask for data
 		newDevice.Host = askQuestion(reader, "Enter hostname or IP address: ")
 		newDevice.Username = askQuestion(reader, "Enter username: ")
 		
@@ -41,7 +41,7 @@ var addCmd = &cobra.Command{
 			newDevice.Prompt = askQuestionWithDefault(reader, "Enter Telnet prompt symbol:", "#")
 		}
 
-		// Добавляем устройство через наше хранилище
+		// Add the device through our storage
 		deviceStore := storage.NewJSONStore("devices/devices.json")
 		if err := deviceStore.AddDevice(newDevice); err != nil {
 			fmt.Printf("Error adding device: %v\n", err)
@@ -57,7 +57,7 @@ func init() {
 	rootCmd.AddCommand(addCmd)
 }
 
-// Вспомогательные функции для опроса пользователя
+// Helper functions for polling the user
 
 func askQuestion(reader *bufio.Reader, query string) string {
 	for {

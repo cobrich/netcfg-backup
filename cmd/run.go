@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	// ... импорты, которые раньше были в main.go ...
 	"flag"
 	"log"
 	"os"
@@ -43,10 +42,8 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		// 1. Создаем экземпляр нашего JSON-хранилища.
 		deviceStore := storage.NewJSONStore("devices/devices.json")
 
-		// 2. Получаем устройства, используя наше новое хранилище.
 		devices, err := deviceStore.GetAllDevices()
 		if err != nil {
 			utils.Log.Fatalf("Failed to load configuration: %v", err)
@@ -148,7 +145,7 @@ func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath st
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	// Здесь мы можем определять флаги, специфичные для команды 'run'
-	// Например, тот самый --backup-path
+	// Here we can define flags specific to the 'run' command
+	// For example, the same --backup-path
 	runCmd.Flags().StringP("backup-path", "p", "backups", "Path to the backup directory")
 }

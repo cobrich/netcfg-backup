@@ -14,10 +14,11 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all configured devices",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Создаем экземпляр нашего хранилища
+		// Create an instance of our storage
 		deviceStore := storage.NewJSONStore("devices/devices.json")
 
-		// Получаем все устройства
+		// Get all devices
+		
 		devices, err := deviceStore.GetAllDevices()
 		if err != nil {
 			fmt.Printf("Error loading devices: %v\n", err)
@@ -29,11 +30,11 @@ var listCmd = &cobra.Command{
 			return
 		}
 
-		// Выводим красивую шапку таблицы
+		// Print a nice table header
 		fmt.Printf("%-20s %-15s %-10s %s\n", "HOST", "USERNAME", "PROTOCOL", "AUTH METHOD")
 		fmt.Println("-----------------------------------------------------------------")
 
-		// Проходим по устройствам и печатаем информацию
+		// Loop through the devices and print the information
 		for _, dev := range devices {
 			authMethod := "Password"
 			if dev.KeyPath != "" {
