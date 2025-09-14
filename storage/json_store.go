@@ -32,3 +32,42 @@ func (js *JSONStore) GetAllDevices() ([]models.Device, error) {
 
 	return devices, nil
 }
+
+// AddDevice adds a new device to the JSON file.
+// It reads the existing devices, appends the new one, and writes the file back.
+func (js *JSONStore) AddDevice(newDevice models.Device) error {
+	// Сначала читаем все существующие устройства
+	devices, err := js.GetAllDevices()
+	// Если файл не существует или пуст, это не ошибка, просто создаем новый список
+	if err != nil && !os.IsNotExist(err) && err.Error() != "EOF" {
+		// Проверяем на EOF, так как пустой файл json.Unmarshal вернет EOF
+		if _, ok := err.(*json.SyntaxError); !ok && err.Error() != "EOF" {
+             return err
+        }
+	}
+
+
+	// Проверяем, не существует ли уже устройство с таким хостом
+	for _, dev := range devices {
+		if dev.Host == newDevice.Host {
+			return fmt.Errorf("device with host '%s' already exists", newDevice.Host)
+		}
+	}
+
+	// Добавляем новое устройство
+	devices = append(devices, newDevice)
+
+	// Кодируем обновленный список в JSON с красивым форматированием
+	data, err := json.MarshalIndent(devices, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling devices to JSON: %w", err)
+	}
+
+	// Перезаписываем файл
+	err = os.WriteFile(js.filePath, data, 0644)
+	if err != nil {
+		return fmt.Errorf("error writing to devices file %s: %w", js.filePath, err)
+	}
+
+	return nil
+}
