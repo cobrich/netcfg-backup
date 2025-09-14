@@ -141,7 +141,8 @@ func (s *SSHConnector) RunCommands(cmds []string) ([]models.Result, error) {
 		select {
 		case <-ctx.Done():
 			logger.Errorf("SSH: command execution timed out '%s'", cmd)
-			results = append(results, models.Result{Cmd: cmd, Output: "timeout"})
+			// results = append(results, models.Result{Cmd: cmd, Output: "timeout"})
+			return results, fmt.Errorf("command '%s' timed out", cmd) 
 		case err := <-errCh:
 			logger.Errorf("SSH: error executing command '%s': %v", cmd, err)
 			results = append(results, models.Result{Cmd: cmd, Output: fmt.Sprintf("error during execution: %v", err)})

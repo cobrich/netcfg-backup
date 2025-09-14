@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -9,8 +10,9 @@ import (
 
 	"github.com/cobrich/netcfg-backup/connectors"
 	"github.com/cobrich/netcfg-backup/models"
-	"github.com/cobrich/netcfg-backup/utils"
+	"github.com/cobrich/netcfg-backup/monitoring"
 	"github.com/cobrich/netcfg-backup/storage"
+	"github.com/cobrich/netcfg-backup/utils"
 	"github.com/joho/godotenv"
 
 	"github.com/spf13/cobra"
@@ -84,6 +86,9 @@ func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath st
 	defer wg.Done()
 
 	for dev := range jobs {
+		// Set starting time
+		startTime := time.Now()
+		
 		entry := utils.Log.WithFields(map[string]interface{}{
 			"worker_id": id,
 			"host":      dev.Host,
@@ -91,54 +96,71 @@ func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath st
 		})
 		entry.Info("Worker picked up the task")
 
-		if dev.PasswordEnv != "" {
-			dev.Password = os.Getenv(dev.PasswordEnv)
-			if dev.Password == "" {
-				entry.Warnf("Environment variable '%s' is not set or empty", dev.PasswordEnv)
+		status := "success"
+		var finalErr error
+
+		func() {
+			if dev.PasswordEnv != "" {
+				dev.Password = os.Getenv(dev.PasswordEnv)
+				if dev.Password == "" {
+					entry.Warnf("Environment variable '%s' is not set or empty", dev.PasswordEnv)
+				}
 			}
-		}
 
-		timeout := defaultTimeout
-		if dev.TimeoutSeconds > 0 {
-			timeout = time.Duration(dev.TimeoutSeconds) * time.Second
-		}
-
-		var connector connectors.Connector
-		switch dev.Protocol {
-		case "ssh":
-			connector = &connectors.SSHConnector{
-				Host:               dev.Host,
-				Username:           dev.Username,
-				Password:           dev.Password,
-				KeyPath:            dev.KeyPath,
-				Timeout:            timeout,
-				AllowInsecureAlgos: dev.AllowInsecureAlgos,
+			timeout := defaultTimeout
+			if dev.TimeoutSeconds > 0 {
+				timeout = time.Duration(dev.TimeoutSeconds) * time.Second
 			}
-		case "telnet":
-			connector = &connectors.TelnetConnector{
-				Host:     dev.Host,
-				Username: dev.Username,
-				Password: dev.Password,
-				Prompt:   dev.Prompt,
-				Timeout:  timeout,
+
+			var connector connectors.Connector
+			switch dev.Protocol {
+			case "ssh":
+				connector = &connectors.SSHConnector{
+					Host:               dev.Host,
+					Username:           dev.Username,
+					Password:           dev.Password,
+					KeyPath:            dev.KeyPath,
+					Timeout:            timeout,
+					AllowInsecureAlgos: dev.AllowInsecureAlgos,
+				}
+			case "telnet":
+				connector = &connectors.TelnetConnector{
+					Host:     dev.Host,
+					Username: dev.Username,
+					Password: dev.Password,
+					Prompt:   dev.Prompt,
+					Timeout:  timeout,
+				}
+			default:
+				finalErr = fmt.Errorf("unknown protocol: %s", dev.Protocol)
+				entry.Error("Unknown protocol")
+				return
 			}
-		default:
-			entry.Error("Unknown protocol")
-			continue
+
+			results, err := connector.RunCommands(dev.Commands)
+			if err != nil {
+				finalErr = err
+				entry.WithField("error", finalErr).Error("Error executing commands")
+				return
+			}
+
+			if err := utils.WriteResultsToFile(backupPath, dev, results); err != nil {
+				finalErr = err
+				entry.WithField("error", finalErr).Error("Error saving results")
+			} else {
+				entry.Info("Results saved successfully")
+			}
+		}()
+
+		duration := time.Since(startTime).Seconds()
+		if finalErr != nil {
+			status = "failed"
 		}
 
-		results, err := connector.RunCommands(dev.Commands)
-		if err != nil {
-			entry.WithField("error", err).Error("Error executing commands")
-			continue
-		}
+		monitoring.JobsTotal.WithLabelValues(dev.Host, status).Inc()
+		monitoring.JobDuration.WithLabelValues(dev.Host).Observe(duration)
 
-		err = utils.WriteResultsToFile(backupPath, dev, results)
-		if err != nil {
-			entry.WithField("error", err).Error("Error saving results")
-		} else {
-			entry.Info("Results saved successfully")
-		}
+		entry.Infof("Job finished with status '%s' in %.2f seconds", status, duration)
 	}
 }
 
