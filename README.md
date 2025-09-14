@@ -71,6 +71,11 @@ Before first use, you need to configure your devices. You can do this interactiv
 ./netcfg-backup add
 ```
 
+**Remove a device from the configuration:**
+```bash
+./netcfg-backup remove <hostname_or_ip>
+```
+
 ### Running the Backup Process
 
 To run the backup for all devices defined in `devices.json`, use the `run` command.
