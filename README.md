@@ -1,20 +1,24 @@
 # Netcfg-Backup
 
-A reliable and extensible tool written in Go for automated backup of network device configurations, featuring a built-in monitoring stack.
+A reliable, web-based tool for automated backup of network device configurations, featuring a full observability stack.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/cobrich/netcfg-backup)](https://goreportcard.com/report/github.com/cobrich/netcfg-backup)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-`netcfg-backup` allows you to connect to a large number of network devices concurrently via SSH or Telnet, execute a predefined set of commands, and save the output. It comes with a pre-configured observability stack using Prometheus and Grafana to monitor job performance.
+`netcfg-backup` provides a user-friendly web interface to manage your network device inventory, run backups on demand, and browse historical configuration files. It uses a concurrent worker pool to handle many devices efficiently and comes with a pre-configured monitoring stack using Prometheus and Grafana.
+
+For automation and scripting, a powerful command-line interface (CLI) is also available.
 
 ## Key Features
 
--   **Built-in Monitoring Stack:** Comes with a ready-to-use `docker-compose` setup for Prometheus and Grafana, providing instant insights into job performance, duration, and success rates.
--   **Versatile CLI:** Manage your device inventory with `add`, `list`, `edit`, `remove`, run scheduled backups with `run`, or execute one-off commands with `exec`.
--   **Multi-protocol Support:** Connect to devices using SSH (with key-based authentication) or legacy Telnet.
--   **Concurrent Operations:** Efficiently handles large device lists using a worker pool.
--   **Secure Credential Management:** Handles secrets securely via environment variables, with support for `.env` files for easy local development.
--   **DevOps Ready:** Features structured JSON logging and a multi-stage `Dockerfile` for quick and secure containerization.
+-   **Web Interface:** A clean, intuitive UI for all primary operations:
+    -   Full CRUD (Create, Read, Update, Delete) for your device inventory.
+    -   On-demand backup execution for all devices.
+    -   A browser for viewing saved backup files.
+-   **Persistent Storage:** Uses a local SQLite database to reliably store device configurations.
+-   **Built-in Monitoring Stack:** Comes with a `docker-compose` setup for Prometheus and Grafana, providing instant insights into job performance and success rates.
+-   **Versatile CLI:** A powerful command-line interface for scripting and automation (`add`, `list`, `edit`, `remove`, `run`, `exec`, `migrate`).
+-   **Multi-protocol & Secure:** Connects via SSH (keys) or Telnet, handling secrets securely via environment variables.
 
 ## Getting Started
 
@@ -24,89 +28,64 @@ A reliable and extensible tool written in Go for automated backup of network dev
 -   [Docker](https://docs.docker.com/get-docker/) and Docker Compose (v2)
 -   Git
 
-### Installation
+### Installation & First Run
 
-1.  Clone the repository:
+The recommended way to run `netcfg-backup` is using the full stack via Docker Compose.
+
+1.  **Clone the repository:**
     ```bash
     git clone https://github.com/cobrich/netcfg-backup.git
     cd netcfg-backup
     ```
 
-2.  **Configuration:**
-    -   Copy `.env.example` to `.env` and fill in your secrets.
-    -   To use the `run` command, add devices to your inventory first: `./netcfg-backup add`. This will create the `devices/devices.json` file.
+2.  **Set up secrets:**
+    Copy the example `.env.example` to `.env` and define any necessary passwords. You will need to create a `SESSION_AUTH_KEY` for the web UI.
+    ```bash
+    cp .env.example .env
+    # Now edit .env with your favorite editor
+    ```
+
+3.  **Launch the application stack:**
+    ```bash
+    docker compose up --build
+    ```
+    This command will build and start the `netcfg-backup` (in `server` mode), `prometheus`, and `grafana` containers.
+
+4.  **Access the Web UI:**
+    Open your browser and navigate to `http://localhost:8080`.
+    
+    You can now manage your devices, run backups, and view results directly from the web interface.
 
 ## Usage
 
-`netcfg-backup` is a command-line tool with several subcommands.
+### Web Interface
 
-### Running the Full Monitoring Stack (Recommended)
+-   **Devices:** `http://localhost:8080/` — Main page for listing, adding, editing, and removing devices.
+-   **Backups:** `http://localhost:8080/backups` — Browse backups by host and view their content.
+-   **Run Backup:** The "Run Backup Now" button on the main page triggers the backup process for all configured devices in the background.
 
-This is the easiest way to run scheduled backups and see all features in action.
-```bash
-docker compose up --build
-```
-This command starts the `netcfg-backup` (in `run` mode), `prometheus`, and `grafana` containers.
+### Monitoring
 
--   **Prometheus:** `http://localhost:9091`
--   **Grafana:** `http://localhost:3000` (login: admin/admin)
+-   **Prometheus:** `http://localhost:9091` — View raw metrics and target status.
+-   **Grafana:** `http://localhost:3000` (login: admin/admin) — Build dashboards to visualize `netcfg_backup_*` metrics.
 
-### Standalone CLI Usage
+### Command-Line Interface (CLI)
 
-You can also build and run the tool directly for quick tasks.
+The CLI is perfect for scripting, automation, or quick ad-hoc tasks.
 
 1.  **Build the binary:**
     ```bash
     go build -o netcfg-backup .
     ```
 
-2.  **Managing the Device Inventory:**
-    ```bash
-    # List all configured devices
-    ./netcfg-backup list
+2.  **Available Commands:**
+    -   `./netcfg-backup server`: Starts the web server (this is what Docker Compose uses).
+    -   `./netcfg-backup run`: Runs the backup process for all devices in the database.
+    -   `./netcfg-backup list | add | edit | remove`: Manage the device inventory from the command line.
+    -   `./netcfg-backup exec --host ...`: Execute ad-hoc commands on a single device.
+    -   `./netcfg-backup migrate`: One-time command to migrate devices from an old `devices.json` file.
 
-    # Add a new device interactively
-    ./netcfg-backup add
-
-    # Edit a device fields
-    ./netcfg-backup edit
-
-    # Remove a device by its host
-    ./netcfg-backup remove <hostname_or_ip>
-    ```
-
-3.  **Running the Inventory Backup Process:**
-    ```bash
-    ./netcfg-backup run --backup-path /path/to/your/backups
-    ```
-    
-4.  **Ad-hoc Command Execution:**
-    Use the `exec` command to run commands on a single device without saving it to the inventory. All parameters are passed via flags.
-
-    *Example (SSH with key):*
-    ```bash
-    ./netcfg-backup exec \
-      --host 127.0.0.1 \
-      --username your_user \
-      --key-path ~/.ssh/your_key \
-      --command "show version"
-    ```
-    *Example (Telnet with password from .env):*
-    ```bash
-    ./netcfg-backup exec \
-      --host 10.0.0.1 \
-      --username admin \
-      --protocol telnet \
-      --password-env "TELNET_PASSWORD" \
-      --prompt "#" \
-      --command "show running-config"
-    ```
-
-## Roadmap
-
--   [ ] Add a `web UI` for managing devices and viewing backup history.
--   [ ] Add support for alerting on failed backups via Prometheus Alertmanager.
--   [ ] Add support for pushing backups to S3-compatible object storage.
+    For more details on any command, use the `--help` flag, e.g., `./netcfg-backup exec --help`.
 
 ## License
 
