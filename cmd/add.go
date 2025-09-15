@@ -24,7 +24,7 @@ var addCmd = &cobra.Command{
 		// Ask for data
 		newDevice.Host = askQuestion(reader, "Enter hostname or IP address: ")
 		newDevice.Username = askQuestion(reader, "Enter username: ")
-		
+
 		protocol := askChoice(reader, "Select protocol:", []string{"ssh", "telnet"})
 		newDevice.Protocol = protocol
 
@@ -41,8 +41,27 @@ var addCmd = &cobra.Command{
 			newDevice.Prompt = askQuestionWithDefault(reader, "Enter Telnet prompt symbol:", "#")
 		}
 
+		fmt.Println("Enter commands to execute, one per line. Type 'done' when finished.")
+		for {
+			cmdStr := askQuestion(reader, "> ")
+			if strings.ToLower(cmdStr) == "done" {
+				break
+			}
+			newDevice.Commands = append(newDevice.Commands, cmdStr)
+		}
+
 		// Add the device through our storage
-		deviceStore := storage.NewJSONStore("devices/devices.json")
+		// deviceStore := storage.NewJSONStore("devices/devices.json")
+		dbPath, err := storage.GetDefaultDBPath()
+		if err != nil {
+			fmt.Printf("Error determining database path: %v\n", err)
+			os.Exit(1)
+		}
+		deviceStore, err := storage.NewSQLiteStore(dbPath)
+		if err != nil {
+			fmt.Printf("Error opening database: %v\n", err)
+			os.Exit(1)
+		}
 		if err := deviceStore.AddDevice(newDevice); err != nil {
 			fmt.Printf("Error adding device: %v\n", err)
 			os.Exit(1)

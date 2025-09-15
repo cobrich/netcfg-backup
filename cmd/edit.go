@@ -14,14 +14,24 @@ import (
 var editCmd = &cobra.Command{
 	Use:   "edit [host]",
 	Short: "Interactively edit an existing device in the configuration",
-	Long:  `Allows you to interactively edit the details of a device specified by its host.
+	Long: `Allows you to interactively edit the details of a device specified by its host.
 For each field, the current value is displayed. Press Enter to keep the current value, or type a new one to change it.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		hostToEdit := args[0]
-		deviceStore := storage.NewJSONStore("devices/devices.json")
+		// deviceStore := storage.NewJSONStore("devices/devices.json")
 
-		// 1. Find the device to edit
+		dbPath, err := storage.GetDefaultDBPath()
+		if err != nil {
+			fmt.Printf("Error determining database path: %v\n", err)
+			os.Exit(1)
+		}
+		deviceStore, err := storage.NewSQLiteStore(dbPath)
+		if err != nil {
+			fmt.Printf("Error opening database: %v\n", err)
+			os.Exit(1)
+		}
+		// Find the device to edit
 		device, err := deviceStore.GetDeviceByHost(hostToEdit)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
@@ -32,7 +42,7 @@ For each field, the current value is displayed. Press Enter to keep the current 
 		fmt.Printf("--- Editing device '%s' ---\n", device.Host)
 		fmt.Println("(Press Enter to keep the current value)")
 
-		// 2. Interactively ask for new values, showing the old ones as defaults
+		// Interactively ask for new values, showing the old ones as defaults
 		device.Username = askQuestionWithDefault(reader, "Username", device.Username)
 
 		// Edit Protocol
@@ -66,7 +76,7 @@ For each field, the current value is displayed. Press Enter to keep the current 
 			device.Prompt = askQuestionWithDefault(reader, "Telnet prompt symbol", device.Prompt)
 			device.KeyPath = "" // Clear key path for Telnet
 		}
-		
+
 		// If protocol changed from ssh to telnet, we might need a prompt
 		if protocolChanged && device.Protocol == "telnet" && device.Prompt == "" {
 			device.Prompt = askQuestionWithDefault(reader, "Telnet prompt symbol", "#")
@@ -86,7 +96,7 @@ For each field, the current value is displayed. Press Enter to keep the current 
 			}
 		}
 
-		// 3. Save the updated device
+		// Save the updated device
 		if err := deviceStore.UpdateDevice(*device); err != nil {
 			fmt.Printf("Error updating device: %v\n", err)
 			os.Exit(1)
