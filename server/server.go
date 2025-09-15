@@ -4,24 +4,41 @@ package server
 import (
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/cobrich/netcfg-backup/backups"
+	"github.com/cobrich/netcfg-backup/core"
 	"github.com/cobrich/netcfg-backup/storage"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 )
 
 // Server holds the dependencies for the web server.
 type Server struct {
-	store  storage.Store
-	router *mux.Router
+	store           storage.Store
+	router          *mux.Router
+	backupService   *backups.Service
+	coreService     *core.BackupService
+	sessionStore    *sessions.CookieStore
+	isBackupRunning bool
 }
 
 // New creates a new Server instance.
-func New(store storage.Store) *Server {
-	s := &Server{
-		store:  store,
-		router: mux.NewRouter(),
+func New(store storage.Store, backupService *backups.Service, coreService *core.BackupService) *Server {
+	authKey := []byte(os.Getenv("SESSION_AUTH_KEY"))
+	if len(authKey) == 0 {
+		log.Println("Warning: SESSION_AUTH_KEY not set. Using a temporary insecure key.")
+		authKey = []byte("a-very-insecure-temporary-secret")
 	}
-	s.routes() // Register the routes
+
+	s := &Server{
+		store:         store,
+		router:        mux.NewRouter(),
+		backupService: backupService,
+		coreService:   coreService,
+		sessionStore:  sessions.NewCookieStore(authKey),
+	}
+	s.routes()
 	return s
 }
 

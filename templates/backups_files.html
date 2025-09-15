@@ -1,0 +1,22 @@
+{{define "content"}}
+    <h1>Backups for {{.Host}}</h1>
+    <a href="/backups" class="btn btn-secondary mb-3">&larr; Back to Host List</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Size (bytes)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Backups}}
+            <tr>
+                <td>{{.Filename}}</td>
+                <td>{{.Size}}</td>
+                <td><a href="/backups/{{$.Host}}/{{.Filename}}" class="btn btn-sm btn-info">View</a></td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+{{end}}

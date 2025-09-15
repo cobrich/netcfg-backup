@@ -1,0 +1,6 @@
+{{define "content"}}
+    <h1>Viewing: {{.Filename}}</h1>
+    <p><strong>Host:</strong> {{.Host}}</p>
+    <a href="/backups/{{.Host}}" class="btn btn-secondary mb-3">&larr; Back to File List</a>
+    <pre><code>{{.Content}}</code></pre>
+{{end}}

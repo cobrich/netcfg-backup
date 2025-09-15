@@ -1,0 +1,11 @@
+{{define "content"}}
+    <h1>Backup Hosts</h1>
+    <p>List of all devices with at least one saved backup.</p>
+    <div class="list-group">
+        {{range .Hosts}}
+            <a href="/backups/{{.}}" class="list-group-item list-group-item-action">{{.}}</a>
+        {{else}}
+            <p class="text-muted">No backups found yet.</p>
+        {{end}}
+    </div>
+{{end}}

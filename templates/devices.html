@@ -1,9 +1,29 @@
 {{define "content"}}
+    {{/* Блок для отображения Flash-сообщений */}}
+    {{range .FlashMessages}}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{.}}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {{end}}
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Device Inventory</h1>
-        <a href="/devices/add" class="btn btn-success">Add New Device</a>
+        <div>
+            <form action="/run-backup" method="POST" class="d-inline">
+                {{/* Если бэкап запущен, делаем кнопку неактивной */}}
+                <button type="submit" class="btn btn-info" {{if .IsBackupRunning}}disabled{{end}}>
+                    {{if .IsBackupRunning}}
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Running...
+                    {{else}}
+                        Run Backup Now
+                    {{end}}
+                </button>
+            </form>
+            <a href="/devices/add" class="btn btn-success">Add New Device</a>
+        </div>
     </div>
-    <p>A list of all network devices managed by the application.</p>
 
     <table class="table table-striped table-hover">
         <thead>

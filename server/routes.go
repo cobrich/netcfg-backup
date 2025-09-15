@@ -11,4 +11,10 @@ func (s *Server) routes() {
 	s.router.HandleFunc("/devices/edit/{host}", s.handleDeviceEditForm()).Methods("GET")
 	s.router.HandleFunc("/devices/edit/{host}", s.handleDeviceEditSubmit()).Methods("POST")
 	s.router.HandleFunc("/devices/remove/{host}", s.handleDeviceRemove()).Methods("POST")
+
+	s.router.HandleFunc("/backups", s.handleBackupHostsList()).Methods("GET")
+	s.router.HandleFunc("/backups/{host}", s.handleBackupFilesList()).Methods("GET")
+	s.router.HandleFunc("/backups/{host}/{filename}", s.handleBackupView()).Methods("GET")
+
+	s.router.HandleFunc("/run-backup", s.handleRunBackup()).Methods("POST")
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cobrich/netcfg-backup/backups"
+	"github.com/cobrich/netcfg-backup/core"
 	"github.com/cobrich/netcfg-backup/server"
 	"github.com/cobrich/netcfg-backup/storage"
 	"github.com/spf13/cobra"
@@ -24,8 +26,12 @@ var serverCmd = &cobra.Command{
 			fmt.Printf("Error opening database: %v\n", err)
 			os.Exit(1)
 		}
-		
-		srv := server.New(deviceStore)
+
+		backupPath := "backups"
+		backupSvc := backups.NewService(backupPath)
+		coreSvc := core.NewBackupService(deviceStore, backupPath, 10)
+
+		srv := server.New(deviceStore, backupSvc, coreSvc)
 		srv.Start("localhost:8080")
 	},
 }
