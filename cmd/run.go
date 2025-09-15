@@ -44,7 +44,17 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		deviceStore := storage.NewJSONStore("devices/devices.json")
+		// deviceStore := storage.NewJSONStore("devices/devices.json")
+		dbPath, err := storage.GetDefaultDBPath()
+		if err != nil {
+			fmt.Printf("Error determining database path: %v\n", err)
+			os.Exit(1)
+		}
+		deviceStore, err := storage.NewSQLiteStore(dbPath)
+		if err != nil {
+			fmt.Printf("Error opening database: %v\n", err)
+			os.Exit(1)
+		}
 
 		devices, err := deviceStore.GetAllDevices()
 		if err != nil {
@@ -88,7 +98,7 @@ func worker(wg *sync.WaitGroup, id int, jobs <-chan models.Device, backupPath st
 	for dev := range jobs {
 		// Set starting time
 		startTime := time.Now()
-		
+
 		entry := utils.Log.WithFields(map[string]interface{}{
 			"worker_id": id,
 			"host":      dev.Host,

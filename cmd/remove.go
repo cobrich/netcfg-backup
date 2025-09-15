@@ -18,8 +18,18 @@ var removeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		hostToRemove := args[0]
 
-		deviceStore := storage.NewJSONStore("devices/devices.json")
+		// deviceStore := storage.NewJSONStore("devices/devices.json")
 
+		dbPath, err := storage.GetDefaultDBPath()
+		if err != nil {
+			fmt.Printf("Error determining database path: %v\n", err)
+			os.Exit(1)
+		}
+		deviceStore, err := storage.NewSQLiteStore(dbPath)
+		if err != nil {
+			fmt.Printf("Error opening database: %v\n", err)
+			os.Exit(1)
+		}
 		if err := deviceStore.RemoveDevice(hostToRemove); err != nil {
 			fmt.Printf("Error removing device: %v\n", err)
 			os.Exit(1)

@@ -1,4 +1,3 @@
-// cmd/list.go
 package cmd
 
 import (
@@ -15,10 +14,21 @@ var listCmd = &cobra.Command{
 	Short: "Lists all configured devices",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Create an instance of our storage
-		deviceStore := storage.NewJSONStore("devices/devices.json")
+		// deviceStore := storage.NewJSONStore("devices/devices.json")
+		// Create a path to the database file in the user's home directory
+		dbPath, err := storage.GetDefaultDBPath()
+		if err != nil {
+			fmt.Printf("Error determining database path: %v\n", err)
+			os.Exit(1)
+		}
+		deviceStore, err := storage.NewSQLiteStore(dbPath)
+		if err != nil {
+			fmt.Printf("Error opening database: %v\n", err)
+			os.Exit(1)
+		}
 
 		// Get all devices
-		
+
 		devices, err := deviceStore.GetAllDevices()
 		if err != nil {
 			fmt.Printf("Error loading devices: %v\n", err)

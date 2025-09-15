@@ -3,7 +3,9 @@ module github.com/cobrich/netcfg-backup
 go 1.24.6
 
 require (
+	github.com/gorilla/mux v1.8.1
 	github.com/joho/godotenv v1.5.1
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.1

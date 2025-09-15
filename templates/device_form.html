@@ -1,0 +1,51 @@
+{{define "content"}}
+    {{/* Если мы редактируем, у .Device будет значение, если добавляем - нет */}}
+    {{if .Device.Host}}
+        <h1>Edit Device: {{.Device.Host}}</h1>
+    {{else}}
+        <h1>Add New Device</h1>
+    {{end}}
+
+    <form action="" method="POST">
+        <div class="mb-3">
+            <label for="host" class="form-label">Host (IP or DNS)</label>
+            <input type="text" class="form-control" id="host" name="host" value="{{.Device.Host}}" {{if .Device.Host}}readonly{{end}} required>
+            {{if .Device.Host}}<div class="form-text">Host cannot be changed.</div>{{end}}
+        </div>
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{.Device.Username}}" required>
+        </div>
+        <div class="mb-3">
+            <label for="protocol" class="form-label">Protocol</label>
+            <select class="form-select" id="protocol" name="protocol">
+                <option value="ssh" {{if eq .Device.Protocol "ssh"}}selected{{end}}>SSH</option>
+                <option value="telnet" {{if eq .Device.Protocol "telnet"}}selected{{end}}>Telnet</option>
+            </select>
+        </div>
+        <hr>
+        <h5>Authentication</h5>
+        <div class="mb-3">
+            <label for="key_path" class="form-label">SSH Key Path (leave empty for password auth)</label>
+            <input type="text" class="form-control" id="key_path" name="key_path" value="{{.Device.KeyPath}}">
+        </div>
+        <div class="mb-3">
+            <label for="password_env" class="form-label">Environment Variable for Password</label>
+            <input type="text" class="form-control" id="password_env" name="password_env" value="{{.Device.PasswordEnv}}">
+        </div>
+        <hr>
+        <h5>Telnet-specific</h5>
+        <div class="mb-3">
+            <label for="prompt" class="form-label">Telnet Prompt</label>
+            <input type="text" class="form-control" id="prompt" name="prompt" value="{{.Device.Prompt}}">
+        </div>
+        <hr>
+        <h5>Commands</h5>
+        <div class="mb-3">
+            <label for="commands" class="form-label">Commands (one per line)</label>
+            <textarea class="form-control" id="commands" name="commands" rows="5">{{.CommandsStr}}</textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Save Device</button>
+        <a href="/" class="btn btn-secondary">Cancel</a>
+    </form>
+{{end}}

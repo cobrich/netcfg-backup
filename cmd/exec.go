@@ -88,7 +88,6 @@ All connection parameters must be provided via command-line flags.`,
 			os.Exit(1)
 		}
 
-		// 4. Просто печатаем результаты в консоль, не сохраняя в файл
 		fmt.Printf("--- Results for %s ---\n", device.Host)
 		for _, result := range results {
 			fmt.Printf("\n### Command: %s ###\n", result.Cmd)
@@ -100,13 +99,12 @@ All connection parameters must be provided via command-line flags.`,
 func init() {
 	rootCmd.AddCommand(execCmd)
 
-	// Определяем флаги для команды exec
+	// Define flags for exec
 	execCmd.Flags().String("host", "", "Target device hostname or IP address (required)")
 	execCmd.Flags().String("username", "", "Username for authentication (required)")
 	execCmd.Flags().String("protocol", "ssh", "Connection protocol (ssh or telnet)")
 	execCmd.Flags().String("key-path", "", "Path to SSH private key file")
 	execCmd.Flags().String("password-env", "", "Environment variable for the password")
-	// StringSlice позволяет указывать флаг несколько раз: --command "cmd1" --command "cmd2"
 	execCmd.Flags().StringSlice("command", []string{}, "Command to execute (required, can be specified multiple times)")
 	execCmd.Flags().Int("timeout", 15, "Connection timeout in seconds")
 	execCmd.Flags().Bool("insecure-algos", false, "Allow insecure legacy SSH algorithms")
