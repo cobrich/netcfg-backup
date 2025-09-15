@@ -10,7 +10,7 @@ A reliable and extensible tool written in Go for automated backup of network dev
 ## Key Features
 
 -   **Built-in Monitoring Stack:** Comes with a ready-to-use `docker-compose` setup for Prometheus and Grafana, providing instant insights into job performance, duration, and success rates.
--   **User-Friendly CLI:** Manage your device inventory with intuitive commands (`add`, `list`, `remove`, `run`).
+-   **Versatile CLI:** Manage your device inventory with `add`, `list`, `remove`, run scheduled backups with `run`, or execute one-off commands with `exec`.
 -   **Multi-protocol Support:** Connect to devices using SSH (with key-based authentication) or legacy Telnet.
 -   **Concurrent Operations:** Efficiently handles large device lists using a worker pool.
 -   **Secure Credential Management:** Handles secrets securely via environment variables, with support for `.env` files for easy local development.
@@ -34,28 +34,22 @@ A reliable and extensible tool written in Go for automated backup of network dev
 
 2.  **Configuration:**
     -   Copy `.env.example` to `.env` and fill in your secrets.
-    -   Use the interactive CLI to add your devices: `./netcfg-backup add`. This will create the `devices/devices.json` file.
+    -   To use the `run` command, add devices to your inventory first: `./netcfg-backup add`. This will create the `devices/devices.json` file.
 
 ## Usage
 
-There are two main ways to run the application: as a full stack with monitoring, or as a standalone CLI tool.
+`netcfg-backup` is a command-line tool with several subcommands.
 
-### Running the Full Stack with Monitoring (Recommended)
+### Running the Full Monitoring Stack (Recommended)
 
-This is the easiest way to get started and see all the features in action.
+This is the easiest way to run scheduled backups and see all features in action.
+```bash
+docker compose up --build
+```
+This command starts the `netcfg-backup` (in `run` mode), `prometheus`, and `grafana` containers.
 
-1.  **Launch all services:**
-    ```bash
-    docker compose up --build
-    ```
-    This command will build the application, and start the `netcfg-backup`, `prometheus`, and `grafana` containers.
-
-2.  **View the metrics:**
-    -   **Prometheus:** Open `http://localhost:9091` to see the Prometheus UI. You can check the status of the `netcfg-backup` target under `Status -> Targets`.
-    -   **Grafana:** Open `http://localhost:3000`.
-        -   Login with `admin` / `admin`.
-        -   Add Prometheus as a data source (URL: `http://prometheus:9090`).
-        -   Create a dashboard to visualize the `netcfg_backup_*` metrics.
+-   **Prometheus:** `http://localhost:9091`
+-   **Grafana:** `http://localhost:3000` (login: admin/admin)
 
 ### Standalone CLI Usage
 
@@ -66,7 +60,7 @@ You can also build and run the tool directly for quick tasks.
     go build -o netcfg-backup .
     ```
 
-2.  **Manage devices:**
+2.  **Managing the Device Inventory:**
     ```bash
     # List all configured devices
     ./netcfg-backup list
@@ -78,9 +72,31 @@ You can also build and run the tool directly for quick tasks.
     ./netcfg-backup remove <hostname_or_ip>
     ```
 
-3.  **Run the backup process:**
+3.  **Running the Inventory Backup Process:**
     ```bash
     ./netcfg-backup run --backup-path /path/to/your/backups
+    ```
+    
+4.  **Ad-hoc Command Execution:**
+    Use the `exec` command to run commands on a single device without saving it to the inventory. All parameters are passed via flags.
+
+    *Example (SSH with key):*
+    ```bash
+    ./netcfg-backup exec \
+      --host 127.0.0.1 \
+      --username your_user \
+      --key-path ~/.ssh/your_key \
+      --command "show version"
+    ```
+    *Example (Telnet with password from .env):*
+    ```bash
+    ./netcfg-backup exec \
+      --host 10.0.0.1 \
+      --username admin \
+      --protocol telnet \
+      --password-env "TELNET_PASSWORD" \
+      --prompt "#" \
+      --command "show running-config"
     ```
 
 ## Roadmap

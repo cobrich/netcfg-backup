@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/cobrich/netcfg-backup/models"
 )
@@ -21,7 +22,26 @@ func NewJSONStore(filePath string) *JSONStore {
 // GetAllDevices reads and parses the device list from the JSON file.
 func (js *JSONStore) GetAllDevices() ([]models.Device, error) {
 	data, err := os.ReadFile(js.filePath)
+	
 	if err != nil {
+		// If error - "file not found"
+		if os.IsNotExist(err) {
+			// Check, if exists folder
+			dir := filepath.Dir(js.filePath)
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return nil, fmt.Errorf("failed to create directory %s: %w", dir, err)
+				}
+			}
+			
+			// Create empty file
+			if err := os.WriteFile(js.filePath, []byte("[]\n"), 0644); err != nil {
+				return nil, fmt.Errorf("failed to create empty devices file %s: %w", js.filePath, err)
+			}
+			// Return empty list of devices, not error
+			return []models.Device{}, nil
+		}
+		// If another error, return it
 		return nil, fmt.Errorf("error reading devices file %s: %w", js.filePath, err)
 	}
 
