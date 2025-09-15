@@ -9,4 +9,6 @@ type Store interface {
 	GetAllDevices() ([]models.Device, error)
 	AddDevice(device models.Device) error
 	RemoveDevice(host string) error
+	GetDeviceByHost(host string) (*models.Device, error)
+	UpdateDevice(updatedDevice models.Device) error
 }

@@ -131,3 +131,45 @@ func (js *JSONStore) RemoveDevice(host string) error {
 
 	return nil
 }
+
+// GetDeviceByHost finds a single device by its host.
+func (js *JSONStore) GetDeviceByHost(host string) (*models.Device, error) {
+	devices, err := js.GetAllDevices()
+	if err != nil {
+		return nil, err
+	}
+	for i, dev := range devices {
+		if dev.Host == host {
+			return &devices[i], nil // Возвращаем указатель на элемент в слайсе
+		}
+	}
+	return nil, fmt.Errorf("device with host '%s' not found", host)
+}
+
+// UpdateDevice finds a device by its host and replaces it with the new version.
+func (js *JSONStore) UpdateDevice(updatedDevice models.Device) error {
+	devices, err := js.GetAllDevices()
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for i, dev := range devices {
+		if dev.Host == updatedDevice.Host {
+			devices[i] = updatedDevice // Заменяем старую структуру на новую
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("device with host '%s' not found to update", updatedDevice.Host)
+	}
+
+	data, err := json.MarshalIndent(devices, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling devices: %w", err)
+	}
+
+	return os.WriteFile(js.filePath, data, 0644)
+}

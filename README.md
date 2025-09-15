@@ -10,7 +10,7 @@ A reliable and extensible tool written in Go for automated backup of network dev
 ## Key Features
 
 -   **Built-in Monitoring Stack:** Comes with a ready-to-use `docker-compose` setup for Prometheus and Grafana, providing instant insights into job performance, duration, and success rates.
--   **Versatile CLI:** Manage your device inventory with `add`, `list`, `remove`, run scheduled backups with `run`, or execute one-off commands with `exec`.
+-   **Versatile CLI:** Manage your device inventory with `add`, `list`, `edit`, `remove`, run scheduled backups with `run`, or execute one-off commands with `exec`.
 -   **Multi-protocol Support:** Connect to devices using SSH (with key-based authentication) or legacy Telnet.
 -   **Concurrent Operations:** Efficiently handles large device lists using a worker pool.
 -   **Secure Credential Management:** Handles secrets securely via environment variables, with support for `.env` files for easy local development.
@@ -68,6 +68,9 @@ You can also build and run the tool directly for quick tasks.
     # Add a new device interactively
     ./netcfg-backup add
 
+    # Edit a device fields
+    ./netcfg-backup edit
+
     # Remove a device by its host
     ./netcfg-backup remove <hostname_or_ip>
     ```
@@ -102,7 +105,6 @@ You can also build and run the tool directly for quick tasks.
 ## Roadmap
 
 -   [ ] Add a `web UI` for managing devices and viewing backup history.
--   [ ] Implement an `edit` command to modify existing devices.
 -   [ ] Add support for alerting on failed backups via Prometheus Alertmanager.
 -   [ ] Add support for pushing backups to S3-compatible object storage.
 
