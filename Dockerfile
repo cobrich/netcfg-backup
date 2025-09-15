@@ -19,6 +19,8 @@ RUN CGO_ENABLED=0 go build -o /app/ssh-fetcher .
 # Use a minimalistic image. Alpine is an excellent choice.
 FROM alpine:latest
 
+RUN apk add --no-cache curl
+
 # Set the working directory
 WORKDIR /app
 RUN mkdir logs

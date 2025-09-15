@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  netcfg-backup:
+    build: .
+    container_name: netcfg-backup
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./devices:/app/devices:ro
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+      # Проброс ключей. Замените app_key на ваш реальный ключ
+      - ~/.ssh/app_key:/root/.ssh/id_rsa:ro
+      - ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+    env_file:
+      - .env
+    command: ["run", "--backup-path", "./backups"]
+    # extra_hosts нужен, чтобы из контейнера можно было достучаться до хоста
+    # по имени host.docker.internal (важно для Linux)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    depends_on:
+      netcfg-backup:
+        condition: service_healthy
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090" # Маппим Prometheus на порт 9091, чтобы не конфликтовать с нашим приложением
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:

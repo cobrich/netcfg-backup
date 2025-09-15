@@ -74,8 +74,8 @@ func (t *TelnetConnector) RunCommands(cmds []string) ([]models.Result, error) {
 		t.Prompt = ">"
 	}
 	// Wait for the prompt after login
-	if _, err := readUntil(conn, t.getTimeout(), t.Prompt); err != nil {
-		return nil, fmt.Errorf("telnet: did not wait for prompt after login: %v", err)
+	if err := expect(conn, t.getTimeout(), t.Prompt, "$", "#", ">"); err != nil {
+		return nil, fmt.Errorf("telnet: did not find a prompt after login: %w", err)
 	}
 
 	results := []models.Result{}
